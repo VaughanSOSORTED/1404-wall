@@ -3,6 +3,10 @@ import {
   moderateMessage,
   MODERATION_NOTICE
 } from './moderation.js';
+import {
+  getWallSummary,
+  getRemainingToday
+} from './live-chain.js';
 // Fictional preview entries. No block number, timestamp, transaction, or wallet is represented as real.
 const demo = [
   'The community builds. The community delivers.',
@@ -14,7 +18,112 @@ const demo = [
 ];
 const $ = s => document.querySelector(s);
 let filter='latest', shown=5, wallet=null, network=null;
+let liveSummary=null;
+let liveReadError=null;
+
 function shortAddress(a){return `${a.slice(0,6)}…${a.slice(-4)}`;}
+
+function setLiveStatus(message, state='loading'){
+  const element=$('#liveChainStatus');
+  if(!element)return;
+  element.textContent=message;
+  element.dataset.state=state;
+}
+
+function renderLiveSummary(){
+  if(!liveSummary)return;
+
+  const count=$('#liveInscriptionCount');
+  const block=$('#liveBlockNumber');
+  const contract=$('#liveContractStatus');
+
+  if(count){
+    count.textContent=
+      liveSummary.inscriptionCount.toString();
+  }
+
+  if(block){
+    block.textContent=
+      liveSummary.blockNumber.toString();
+  }
+
+  if(contract){
+    contract.textContent='VERIFIED · CHAIN 1404';
+  }
+}
+
+async function refreshLiveChain(){
+  setLiveStatus(
+    'READING LIVE CHAIN 1404 DATA…',
+    'loading'
+  );
+
+  try{
+    liveSummary=await getWallSummary();
+    liveReadError=null;
+
+    renderLiveSummary();
+
+    setLiveStatus(
+      'LIVE · CHAIN 1404',
+      'live'
+    );
+
+    if(wallet){
+      await refreshAllowance();
+    }
+
+  }catch(error){
+    console.error(
+      'Live Chain 1404 read failed:',
+      error
+    );
+
+    liveReadError=error;
+
+    setLiveStatus(
+      'LIVE CHAIN DATA TEMPORARILY UNAVAILABLE',
+      'error'
+    );
+  }
+}
+
+async function refreshAllowance(){
+  if(!wallet){
+    $('#dailyRemaining').textContent=
+      'CONNECT WALLET TO CHECK';
+    return;
+  }
+
+  if(
+    network?.toLowerCase() !==
+    chain.chainIdHex
+  ){
+    $('#dailyRemaining').textContent=
+      'SWITCH TO CHAIN 1404';
+    return;
+  }
+
+  $('#dailyRemaining').textContent=
+    'CHECKING…';
+
+  try{
+    const result=
+      await getRemainingToday(wallet);
+
+    $('#dailyRemaining').textContent=
+      `${result.value.toString()} OF 3 REMAINING`;
+
+  }catch(error){
+    console.error(
+      'Allowance read failed:',
+      error
+    );
+
+    $('#dailyRemaining').textContent=
+      'UNAVAILABLE';
+  }
+}
 function render(){
   const cards=$('#cards');cards.replaceChildren();
   const entries=filter==='mine'?[]:filter==='latest'?demo.slice(0,5):demo;
@@ -55,8 +164,21 @@ function updateWallet(){
     ? 'Demo preview. On-chain submission is disabled pending contract and network review.'
     : 'Inscription currently unavailable.';
 
-  $('#dailyRemaining').textContent='3 OF 3 REMAINING';
   $('#inscribe').disabled=true;
+
+  if(!wallet){
+    $('#dailyRemaining').textContent=
+      'CONNECT WALLET TO CHECK';
+  }else if(
+    network?.toLowerCase() !==
+    chain.chainIdHex
+  ){
+    $('#dailyRemaining').textContent=
+      'SWITCH TO CHAIN 1404';
+  }else{
+    refreshAllowance();
+  }
+
   if(filter==='mine')render();
 }
 async function connect(){
@@ -70,3 +192,14 @@ $('#connect').addEventListener('click',connect);
 if(window.ethereum?.on){window.ethereum.on('accountsChanged',accounts=>{wallet=accounts?.[0]||null;updateWallet();});window.ethereum.on('chainChanged',value=>{network=value;updateWallet();});}
 // Confirmation component remains inaccessible until an audited live integration is implemented.
 $('#inscribe').addEventListener('click',()=>{const value=$('#message').value.trim();if(!value||[...value].length>280)return;$('#reviewMessage').textContent=value;$('#confirm').showModal();});
+
+
+// Live blockchain reads are enabled while transaction
+// submission remains protected by DEMO_MODE.
+updateWallet();
+refreshLiveChain();
+
+setInterval(
+  refreshLiveChain,
+  30000
+);

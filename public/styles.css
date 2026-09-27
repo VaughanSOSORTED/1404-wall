@@ -262,3 +262,70 @@ justify-content:center
 }
 
 }
+
+/* Live Chain 1404 status */
+.live-chain-panel{
+  margin-bottom:24px;
+  padding:18px;
+  border:1px solid rgba(95,210,255,.24);
+  border-radius:16px;
+  background:rgba(7,20,31,.72);
+}
+
+.live-chain-panel > div:first-child{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:16px;
+}
+
+#liveChainStatus{
+  font-size:.78rem;
+  letter-spacing:.08em;
+}
+
+#liveChainStatus[data-state="live"]::before{
+  content:"● ";
+}
+
+.live-chain-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+}
+
+.live-chain-grid > div{
+  padding:12px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:12px;
+  background:rgba(255,255,255,.025);
+}
+
+.live-chain-grid span{
+  display:block;
+  margin-bottom:5px;
+  font-size:.68rem;
+  opacity:.62;
+  letter-spacing:.08em;
+}
+
+.live-chain-grid strong{
+  display:block;
+  overflow-wrap:anywhere;
+}
+
+@media (max-width:700px){
+  .live-chain-panel > div:first-child{
+    display:block;
+  }
+
+  #liveChainStatus{
+    display:block;
+    margin-top:6px;
+  }
+
+  .live-chain-grid{
+    grid-template-columns:1fr;
+  }
+}
