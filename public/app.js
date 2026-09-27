@@ -13,6 +13,7 @@ let filter='latest', shown=5, wallet=null, network=null;
 let liveSummary=null;
 let liveReadError=null;
 let transactionPending=false;
+let remainingAllowance=null;
 
 const INSCRIBE_SELECTOR='0x911a6512';
 const MAX_MESSAGE_CHARACTERS=280;
@@ -108,8 +109,12 @@ async function refreshAllowance(){
     const result=
       await getRemainingToday(wallet);
 
+    remainingAllowance=result.value;
+
     $('#dailyRemaining').textContent=
       `${result.value.toString()} OF 3 REMAINING`;
+
+    updateWriteButton();
 
   }catch(error){
     console.error(
@@ -390,7 +395,9 @@ function canWrite(){
     !DEMO_MODE &&
     !transactionPending &&
     Boolean(wallet) &&
-    network?.toLowerCase()===chain.chainIdHex
+    network?.toLowerCase()===chain.chainIdHex &&
+    remainingAllowance !== null &&
+    remainingAllowance > 0n
   );
 }
 
@@ -420,6 +427,8 @@ $('#message').addEventListener('input',e=>{
   updateWriteButton();
 });
 function updateWallet(){
+  remainingAllowance=null;
+
   $('#connect').textContent=wallet?'DISCONNECT':'CONNECT WALLET';
   $('#walletStatus').textContent=wallet?`${shortAddress(wallet)} · ${network?.toLowerCase()===chain.chainIdHex?'CHAIN 1404':'WRONG NETWORK'}`:'NOT CONNECTED';
   $('#composerNotice').textContent=DEMO_MODE
@@ -520,56 +529,57 @@ async function submitInscription(){
     return;
   }
 
-  const currentChain=
-    await provider.request({
-      method:'eth_chainId'
-    });
-
-  network=currentChain;
-
-  if(
-    currentChain?.toLowerCase() !==
-    chain.chainIdHex
-  ){
-    $('#composerNotice').textContent=
-      'Switch your wallet to BlockDAG Chain 1404 before continuing.';
-    updateWallet();
-    return;
-  }
-
-  const validation=
-    validateMessage($('#message').value);
-
-  if(!validation.ok){
-    $('#composerNotice').textContent=
-      validation.message;
-    updateWriteButton();
-    return;
-  }
-
-  const remaining=
-    await getRemainingToday(wallet);
-
-  if(remaining.value<=0n){
-    $('#dailyRemaining').textContent=
-      '0 OF 3 REMAINING';
-
-    $('#composerNotice').textContent=
-      'This wallet has reached today’s 3-inscription limit.';
-    updateWriteButton();
-    return;
-  }
-
-  const data=
-    encodeInscriptionCall(validation.value);
-
+  // Lock immediately before any asynchronous preflight work.
   transactionPending=true;
   updateWriteButton();
 
-  $('#composerNotice').textContent=
-    'Confirm the transaction in your wallet. Only normal BlockDAG network gas is required.';
-
   try{
+    const currentChain=
+      await provider.request({
+        method:'eth_chainId'
+      });
+
+    network=currentChain;
+
+    if(
+      currentChain?.toLowerCase() !==
+      chain.chainIdHex
+    ){
+      $('#composerNotice').textContent=
+        'Switch your wallet to BlockDAG Chain 1404 before continuing.';
+      updateWallet();
+      return;
+    }
+
+    const validation=
+      validateMessage($('#message').value);
+
+    if(!validation.ok){
+      $('#composerNotice').textContent=
+        validation.message;
+      return;
+    }
+
+    const remaining=
+      await getRemainingToday(wallet);
+
+    remainingAllowance=remaining.value;
+
+    if(remaining.value<=0n){
+      $('#dailyRemaining').textContent=
+        '0 OF 3 REMAINING';
+
+      $('#composerNotice').textContent=
+        'This wallet has reached today’s 3-inscription limit.';
+      return;
+    }
+
+    const data=
+      encodeInscriptionCall(validation.value);
+
+    $('#composerNotice').textContent=
+      'Confirm the transaction in your wallet. Only normal BlockDAG network gas is required.';
+
     const transactionHash=
       await provider.request({
         method:'eth_sendTransaction',
