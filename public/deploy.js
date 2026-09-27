@@ -4,6 +4,8 @@ import {
 
 const EXPECTED_CHAIN_ID = 1404;
 const EXPECTED_CHAIN_HEX = '0x57c';
+const DEPLOYMENT_GAS_LIMIT = 325000n;
+const DEPLOYMENT_GAS_PRICE = 4000028n;
 
 const walletEl =
   document.querySelector('#wallet');
@@ -190,17 +192,15 @@ async function refreshWallet() {
 
   try {
 
-    const price =
-      await request('eth_gasPrice');
-
     gasPrice =
-      BigInt(price);
+      DEPLOYMENT_GAS_PRICE;
 
-    const estimatedCost =
-      estimatedGas * gasPrice;
+    const maximumCost =
+      DEPLOYMENT_GAS_LIMIT *
+      DEPLOYMENT_GAS_PRICE;
 
     costEl.textContent =
-      `${formatBDAG(estimatedCost)} BDAG`;
+      `${formatBDAG(maximumCost)} BDAG maximum`;
 
   } catch {
 
@@ -324,7 +324,8 @@ deployButton.addEventListener(
           [{
             from: account,
             data: WALL1404_BYTECODE,
-            gas: '0x4f588'
+            gas: '0x4f588',
+            gasPrice: '0x3d091c'
           }]
         );
 
