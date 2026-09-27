@@ -1,0 +1,17 @@
+# Firebase local cache
+.firebase/
+
+# Environment / secrets
+.env
+.env.*
+*.pem
+*.key
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log
