@@ -12,6 +12,11 @@ const $ = s => document.querySelector(s);
 let filter='latest', shown=5, wallet=null, network=null;
 let liveSummary=null;
 let liveReadError=null;
+let transactionPending=false;
+
+const INSCRIBE_SELECTOR='0x911a6512';
+const MAX_MESSAGE_CHARACTERS=280;
+const MAX_MESSAGE_BYTES=1120;
 
 function shortAddress(a){return `${a.slice(0,6)}…${a.slice(-4)}`;}
 
@@ -309,7 +314,111 @@ async function refreshFeed(){
 refreshFeed();
 document.querySelectorAll('[data-filter]').forEach(button=>button.addEventListener('click',()=>{filter=button.dataset.filter;shown=5;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===button));render();}));
 $('#loadMore').addEventListener('click',()=>{shown+=5;render();});
-$('#message').addEventListener('input',e=>{$('#count').textContent=`${[...e.target.value].length} / 280`;});
+function messageMetrics(value){
+  return {
+    characters:[...value].length,
+    bytes:new TextEncoder().encode(value).length
+  };
+}
+
+function validateMessage(rawValue){
+  const value=rawValue.trim();
+  const metrics=messageMetrics(value);
+
+  if(!value){
+    return {
+      ok:false,
+      message:'Enter a message before continuing.'
+    };
+  }
+
+  if(metrics.characters>MAX_MESSAGE_CHARACTERS){
+    return {
+      ok:false,
+      message:'Message exceeds the 280 character interface limit.'
+    };
+  }
+
+  if(metrics.bytes>MAX_MESSAGE_BYTES){
+    return {
+      ok:false,
+      message:'Message exceeds the 1120-byte smart contract limit.'
+    };
+  }
+
+  return {
+    ok:true,
+    value,
+    characters:metrics.characters,
+    bytes:metrics.bytes
+  };
+}
+
+function encodeUint256(value){
+  return BigInt(value)
+    .toString(16)
+    .padStart(64,'0');
+}
+
+function bytesToHex(bytes){
+  return Array.from(
+    bytes,
+    byte=>byte.toString(16).padStart(2,'0')
+  ).join('');
+}
+
+function encodeInscriptionCall(message){
+  const bytes=new TextEncoder().encode(message);
+  const messageHex=bytesToHex(bytes);
+
+  const paddedLength=
+    Math.ceil(bytes.length/32)*64;
+
+  const paddedMessage=
+    messageHex.padEnd(paddedLength,'0');
+
+  return (
+    INSCRIBE_SELECTOR +
+    encodeUint256(32n) +
+    encodeUint256(BigInt(bytes.length)) +
+    paddedMessage
+  );
+}
+
+function canWrite(){
+  return (
+    !DEMO_MODE &&
+    !transactionPending &&
+    Boolean(wallet) &&
+    network?.toLowerCase()===chain.chainIdHex
+  );
+}
+
+function updateWriteButton(){
+  const button=$('#inscribe');
+  if(!button)return;
+
+  const validation=
+    validateMessage($('#message').value);
+
+  button.disabled=
+    !canWrite() ||
+    !validation.ok;
+
+  button.textContent=
+    transactionPending
+      ? 'TRANSACTION PENDING…'
+      : 'WRITE TO CHAIN 1404 →';
+}
+
+$('#message').addEventListener('input',e=>{
+  const metrics=messageMetrics(e.target.value);
+
+  $('#count').textContent=
+    `${metrics.characters} / 280`;
+
+  updateWriteButton();
+});
 function updateWallet(){
   $('#connect').textContent=wallet?'DISCONNECT':'CONNECT WALLET';
   $('#walletStatus').textContent=wallet?`${shortAddress(wallet)} · ${network?.toLowerCase()===chain.chainIdHex?'CHAIN 1404':'WRONG NETWORK'}`:'NOT CONNECTED';
@@ -317,7 +426,7 @@ function updateWallet(){
     ? 'Live blockchain reads enabled. On-chain submission is currently disabled.'
     : 'Inscription currently unavailable.';
 
-  $('#inscribe').disabled=true;
+  updateWriteButton();
 
   if(!wallet){
     $('#dailyRemaining').textContent=
@@ -343,8 +452,201 @@ async function connect(){
 }
 $('#connect').addEventListener('click',connect);
 if(window.ethereum?.on){window.ethereum.on('accountsChanged',accounts=>{wallet=accounts?.[0]||null;updateWallet();});window.ethereum.on('chainChanged',value=>{network=value;updateWallet();});}
-// Confirmation component remains inaccessible until an audited live integration is implemented.
-$('#inscribe').addEventListener('click',()=>{const value=$('#message').value.trim();if(!value||[...value].length>280)return;$('#reviewMessage').textContent=value;$('#confirm').showModal();});
+$('#inscribe').addEventListener('click',()=>{
+  if(!canWrite())return;
+
+  const validation=
+    validateMessage($('#message').value);
+
+  if(!validation.ok){
+    $('#composerNotice').textContent=
+      validation.message;
+    updateWriteButton();
+    return;
+  }
+
+  $('#reviewMessage').textContent=
+    validation.value;
+
+  $('#confirm').showModal();
+});
+
+async function waitForReceipt(
+  provider,
+  transactionHash,
+  timeoutMs=120000
+){
+  const started=Date.now();
+
+  while(Date.now()-started<timeoutMs){
+    const receipt=
+      await provider.request({
+        method:'eth_getTransactionReceipt',
+        params:[transactionHash]
+      });
+
+    if(receipt)return receipt;
+
+    await new Promise(
+      resolve=>setTimeout(resolve,2500)
+    );
+  }
+
+  throw new Error(
+    'Transaction submitted but confirmation timed out. Check your wallet or explorer before trying again.'
+  );
+}
+
+async function submitInscription(){
+  if(DEMO_MODE){
+    $('#composerNotice').textContent=
+      'On-chain submission remains locked.';
+    return;
+  }
+
+  if(transactionPending)return;
+
+  const provider=window.ethereum;
+
+  if(!provider?.request){
+    $('#composerNotice').textContent=
+      'No compatible wallet detected.';
+    return;
+  }
+
+  if(!wallet){
+    $('#composerNotice').textContent=
+      'Connect your wallet before writing to the Wall.';
+    return;
+  }
+
+  const currentChain=
+    await provider.request({
+      method:'eth_chainId'
+    });
+
+  network=currentChain;
+
+  if(
+    currentChain?.toLowerCase() !==
+    chain.chainIdHex
+  ){
+    $('#composerNotice').textContent=
+      'Switch your wallet to BlockDAG Chain 1404 before continuing.';
+    updateWallet();
+    return;
+  }
+
+  const validation=
+    validateMessage($('#message').value);
+
+  if(!validation.ok){
+    $('#composerNotice').textContent=
+      validation.message;
+    updateWriteButton();
+    return;
+  }
+
+  const remaining=
+    await getRemainingToday(wallet);
+
+  if(remaining.value<=0n){
+    $('#dailyRemaining').textContent=
+      '0 OF 3 REMAINING';
+
+    $('#composerNotice').textContent=
+      'This wallet has reached today’s 3-inscription limit.';
+    updateWriteButton();
+    return;
+  }
+
+  const data=
+    encodeInscriptionCall(validation.value);
+
+  transactionPending=true;
+  updateWriteButton();
+
+  $('#composerNotice').textContent=
+    'Confirm the transaction in your wallet. Only normal BlockDAG network gas is required.';
+
+  try{
+    const transactionHash=
+      await provider.request({
+        method:'eth_sendTransaction',
+        params:[{
+          from:wallet,
+          to:chain.contractAddress,
+          data
+        }]
+      });
+
+    $('#composerNotice').textContent=
+      'Transaction submitted. Waiting for Chain 1404 confirmation…';
+
+    const receipt=
+      await waitForReceipt(
+        provider,
+        transactionHash
+      );
+
+    if(
+      receipt.status &&
+      BigInt(receipt.status)!==1n
+    ){
+      throw new Error(
+        'The blockchain transaction reverted.'
+      );
+    }
+
+    $('#message').value='';
+    $('#count').textContent='0 / 280';
+
+    $('#composerNotice').textContent=
+      'Inscription confirmed on Chain 1404.';
+
+    await Promise.all([
+      refreshLiveChain(),
+      refreshFeed(),
+      refreshAllowance()
+    ]);
+
+  }catch(error){
+    console.error(
+      'Inscription transaction failed:',
+      error
+    );
+
+    if(error?.code===4001){
+      $('#composerNotice').textContent=
+        'Transaction was cancelled in your wallet.';
+    }else{
+      $('#composerNotice').textContent=
+        error?.message ||
+        'The inscription transaction could not be completed.';
+    }
+
+  }finally{
+    transactionPending=false;
+    updateWriteButton();
+  }
+}
+
+$('#acknowledge').addEventListener(
+  'click',
+  event=>{
+    event.preventDefault();
+
+    if(DEMO_MODE){
+      $('#confirm').close();
+      $('#composerNotice').textContent=
+        'On-chain submission remains locked.';
+      return;
+    }
+
+    $('#confirm').close();
+    submitInscription();
+  }
+);
 
 
 // Live blockchain reads are enabled while transaction
