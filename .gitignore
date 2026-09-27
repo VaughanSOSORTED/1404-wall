@@ -15,3 +15,14 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Hardhat
+artifacts/
+cache/
+
+# Dependencies
+node_modules/
+
+# Deployment secrets
+.env
+.local-backup/

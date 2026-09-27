@@ -1,10 +1,581 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f7f7f5"><meta name="description" content="The 1404 Wall — leave your mark on the chain. A BDAG So Sorted community preview."><title>The 1404 Wall — BDAG So Sorted</title><link rel="stylesheet" href="styles.css"></head><body>
-<header class="site-header"><div class="container header-inner"><a href="#top" class="logo-link"><img src="brand-logo.png" alt="BDAG SO SORTED"></a><nav aria-label="Main navigation"><a href="#top">Home</a><a href="#how">How it works</a><a class="selected" href="#wall">1404 Wall</a><a href="#write">Write</a><a href="#about">About</a><a href="https://bdagsosorted.co.uk/">Other dApps ↗</a></nav><span class="network-chip"><i></i> CHAIN 1404 · DEMO PREVIEW</span></div></header>
-<main id="top"><section class="hero container"><div class="hero-copy"><p class="kicker">COMMUNITY BUILT INFRASTRUCTURE</p><h1>THE <span>1404 WALL.</span></h1><h2>Leave your mark on the chain.</h2><p class="intro">A space for messages on BDAG Community Chain 1404. Connect your wallet and preview the experience before on-chain inscriptions launch.</p><div class="actions"><a href="#write" class="button red">WRITE TO THE WALL <b>→</b></a><a href="#wall" class="button white">EXPLORE MESSAGES <b>↗</b></a></div></div><div class="hero-diagram" aria-hidden="true"><div class="ring ring-outer"></div><div class="ring ring-mid"></div><div class="ring ring-inner"></div><span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span><span class="dot d4"></span><span class="dot d5"></span><span class="dot d6"></span><span class="dot d7"></span><span class="dot d8"></span><span class="orbit-label l1">MESSAGES</span><span class="orbit-label l2">COMMUNITY</span><span class="orbit-label l3">HISTORY</span><span class="orbit-label l4">FOREVER</span><span class="orbit-label l5">CHAIN 1404</span><span class="orbit-label l6">DECENTRALISED</span><div class="orbit-core"><span class="cube">⬡</span><strong>1404</strong><small>ON-CHAIN WALL</small></div></div></section>
-<section class="container stats" aria-label="Preview information"><div><span class="stat-icon">▤</span><p><strong>DEMO</strong><small>SAMPLE MESSAGES</small></p></div><div><span class="stat-icon">♧</span><p><strong>280</strong><small>CHARACTER LIMIT</small></p></div><div><span class="stat-icon">⬡</span><p><strong>1404</strong><small>CHAIN ID</small></p></div><div><span class="stat-icon">◉</span><p><strong class="status-text">PREVIEW</strong><small>NO TRANSACTIONS</small></p></div></section>
-<section id="how" class="container how"><div class="how-title"><div><p class="kicker">HOW IT WORKS</p><h2>A message that lives <span>on-chain.</span></h2></div><p>Once launched, the Wall will let people record a message on Chain 1404. Confirmed blockchain messages cannot be edited or deleted.</p></div><div class="steps"><article><span class="step-number">01</span><div><h3>Connect</h3><p>Connect an EIP-1193 compatible wallet to the 1404 network.</p></div><span class="step-icon">▣</span></article><article><span class="step-number">02</span><div><h3>Write</h3><p>Create your message. Maximum 280 characters.</p></div><span class="step-icon">✎</span></article><article><span class="step-number">03</span><div><h3>Confirm</h3><p>Review and approve the transaction in your own wallet when launched.</p></div><span class="step-icon">ⓥ</span></article></div></section>
-<section class="container app-grid"><div id="wall" class="panel feed"><div class="panel-header"><p class="kicker">LATEST MESSAGES <span class="preview-tag">DEMO</span></p><div class="tabs" role="group" aria-label="Filter inscriptions"><button class="active" data-filter="latest">LATEST</button><button data-filter="all">ALL</button><button data-filter="mine">MY MESSAGES</button></div></div><p class="feed-context">Fictional samples for layout preview. No blockchain record or transaction links yet.</p><div id="cards" class="cards" aria-live="polite"></div><button id="loadMore" class="load">LOAD MORE MESSAGES ↓</button><span id="resultCount" class="visually-hidden"></span></div>
-<div id="write" class="panel composer"><div class="panel-header"><p class="kicker">WRITE TO THE 1404 WALL</p></div><label for="connect" class="field-label">Your Wallet</label><div class="wallet-row"><span class="wallet-icon">◈</span><span id="walletStatus">NOT CONNECTED</span><button class="small-button" id="connect">CONNECT WALLET</button></div><label for="message" class="field-label">Your Message <span>280 characters max</span></label><textarea id="message" maxlength="280" rows="5" placeholder="Write your message to the chain…"></textarea><div id="count" class="count">0 / 280</div><p class="warning">ⓘ &nbsp; When enabled, your message will be written to Chain 1404 and cannot be edited or deleted after confirmation.</p><button class="button red submit" id="inscribe" disabled>WRITE TO CHAIN 1404 <b>→</b></button><p class="demo-note" id="composerNotice" role="status">Demo preview. On-chain submission is disabled pending contract and network review.</p></div></section>
-<section id="about" class="container about"><p class="kicker">BUILT TO LAST</p><h2>The blockchain will be the permanent record.</h2><p>Inscription IDs, wallet addresses, transactions, blocks and timestamps will come from verified on-chain events once the contract is deployed. This website will display that data; it will not own or replace it.</p></section></main>
-<footer><div class="container footer-main"><div><img src="brand-logo.png" alt="BDAG SO SORTED"><span class="footer-divider"></span><strong>THE 1404 WALL</strong></div><nav aria-label="Footer"><a href="#top">Home</a><a href="#how">How it works</a><a href="#wall">Messages</a><a href="#write">Write</a></nav><small>DEMO PREVIEW<br>NO TRANSACTIONS ENABLED</small></div><div class="footer-bottom">BDAG COMMUNITY 1404 WALL &nbsp; | &nbsp; COMMUNITY BUILT. COMMUNITY DELIVERS.</div></footer>
-<dialog id="confirm"><form method="dialog"><button class="close" aria-label="Close">×</button><p class="kicker">REVIEW INSCRIPTION</p><h2>Make it permanent.</h2><p>Once confirmed on-chain, this message cannot be edited or deleted. Your wallet address and transaction details will be public.</p><blockquote id="reviewMessage"></blockquote><p>Demo only. Signing and submission are disabled.</p><button class="button red" value="close">UNDERSTOOD</button></form></dialog><script type="module" src="app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f7f7f5">
+<meta name="description" content="The 1404 Wall — leave your mark on the chain. A BDAG So Sorted community project.">
+<title>The 1404 Wall — BDAG So Sorted</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+<header class="site-header">
+<div class="container header-inner">
+
+<a href="#top" class="logo-link">
+<img src="brand-logo.png" alt="BDAG SO SORTED">
+</a>
+
+<nav aria-label="Main navigation">
+<a href="#top">Home</a>
+<a href="#how">How it works</a>
+<a class="selected" href="#wall">1404 Wall</a>
+<a href="#write">Write</a>
+<a href="#about">About</a>
+<a href="terms.html">Terms</a>
+<a href="https://bdagsosorted.co.uk/">Other dApps ↗</a>
+</nav>
+
+<span class="network-chip">
+<i></i> CHAIN 1404 · DEMO PREVIEW
+</span>
+
+</div>
+</header>
+
+
+<main id="top">
+
+<section class="hero container">
+
+<div class="hero-copy">
+
+<p class="kicker">COMMUNITY BUILT INFRASTRUCTURE</p>
+
+<h1>THE <span>1404 WALL.</span></h1>
+
+<h2>Leave your mark on the chain.</h2>
+
+<p class="intro">
+A community wall designed for public inscriptions on BlockDAG Chain 1404.
+Connect your wallet, write your message and — once launched — make your
+mark on the blockchain.
+</p>
+
+<div class="actions">
+<a href="#write" class="button red">
+WRITE TO THE WALL <b>→</b>
+</a>
+
+<a href="#wall" class="button white">
+EXPLORE MESSAGES <b>↗</b>
+</a>
+</div>
+
+</div>
+
+
+<div class="hero-diagram" aria-hidden="true">
+
+<div class="ring ring-outer"></div>
+<div class="ring ring-mid"></div>
+<div class="ring ring-inner"></div>
+
+<span class="dot d1"></span>
+<span class="dot d2"></span>
+<span class="dot d3"></span>
+<span class="dot d4"></span>
+<span class="dot d5"></span>
+<span class="dot d6"></span>
+<span class="dot d7"></span>
+<span class="dot d8"></span>
+
+<span class="orbit-label l1">MESSAGES</span>
+<span class="orbit-label l2">COMMUNITY</span>
+<span class="orbit-label l3">HISTORY</span>
+<span class="orbit-label l4">FOREVER</span>
+<span class="orbit-label l5">CHAIN 1404</span>
+<span class="orbit-label l6">DECENTRALISED</span>
+
+<div class="orbit-core">
+<span class="cube">⬡</span>
+<strong>1404</strong>
+<small>ON-CHAIN WALL</small>
+</div>
+
+</div>
+
+</section>
+
+
+<section class="container stats" aria-label="Wall information">
+
+<div>
+<span class="stat-icon">▤</span>
+<p>
+<strong>3</strong>
+<small>POSTS PER WALLET / DAY</small>
+</p>
+</div>
+
+<div>
+<span class="stat-icon">♧</span>
+<p>
+<strong>280</strong>
+<small>CHARACTER LIMIT</small>
+</p>
+</div>
+
+<div>
+<span class="stat-icon">⬡</span>
+<p>
+<strong>1404</strong>
+<small>CHAIN ID</small>
+</p>
+</div>
+
+<div>
+<span class="stat-icon">◉</span>
+<p>
+<strong class="status-text">PREVIEW</strong>
+<small>NO TRANSACTIONS</small>
+</p>
+</div>
+
+</section>
+
+
+<section id="how" class="container how">
+
+<div class="how-title">
+
+<div>
+<p class="kicker">HOW IT WORKS</p>
+<h2>A message that lives <span>on-chain.</span></h2>
+</div>
+
+<p>
+Once launched, the Wall will let wallet holders record public messages
+on Chain 1404. Confirmed inscriptions cannot be edited or deleted by
+this website.
+</p>
+
+</div>
+
+
+<div class="steps">
+
+<article>
+<span class="step-number">01</span>
+<div>
+<h3>Connect</h3>
+<p>Connect a compatible wallet to Chain 1404.</p>
+</div>
+<span class="step-icon">▣</span>
+</article>
+
+<article>
+<span class="step-number">02</span>
+<div>
+<h3>Write</h3>
+<p>Create your message. Maximum 280 characters in the interface.</p>
+</div>
+<span class="step-icon">✎</span>
+</article>
+
+<article>
+<span class="step-number">03</span>
+<div>
+<h3>Confirm</h3>
+<p>Read the permanence warning and approve the transaction in your wallet.</p>
+</div>
+<span class="step-icon">ⓥ</span>
+</article>
+
+</div>
+
+</section>
+
+
+<section class="container principle-banner">
+
+<strong>THE BLOCKCHAIN IS THE RECORD.</strong>
+
+<span>
+This website is a filtered view. Some on-chain messages may not be
+displayed by the 1404 Wall interface.
+</span>
+
+</section>
+
+
+<section class="container app-grid">
+
+<div id="wall" class="panel feed">
+
+<div class="panel-header">
+
+<p class="kicker">
+LATEST MESSAGES
+<span class="preview-tag">DEMO</span>
+</p>
+
+<div class="tabs" role="group" aria-label="Filter inscriptions">
+<button class="active" data-filter="latest">LATEST</button>
+<button data-filter="all">ALL</button>
+<button data-filter="mine">MY MESSAGES</button>
+</div>
+
+</div>
+
+
+<div class="filter-notice">
+
+<strong>
+THE BLOCKCHAIN IS THE RECORD. THIS WEBSITE IS A FILTERED VIEW.
+</strong>
+
+<span>
+The 1404 Wall may hide message content from this public feed.
+Filtering the website does not delete or alter an underlying
+blockchain inscription.
+</span>
+
+</div>
+
+
+<p class="feed-context">
+Fictional samples for layout preview. No blockchain records or
+transaction links are being shown yet.
+</p>
+
+<div id="cards" class="cards" aria-live="polite"></div>
+
+<button id="loadMore" class="load">
+LOAD MORE MESSAGES ↓
+</button>
+
+<span id="resultCount" class="visually-hidden"></span>
+
+</div>
+
+
+<div id="write" class="panel composer">
+
+<div class="panel-header">
+<p class="kicker">WRITE TO THE 1404 WALL</p>
+</div>
+
+
+<label for="connect" class="field-label">
+Your Wallet
+</label>
+
+<div class="wallet-row">
+
+<span class="wallet-icon">◈</span>
+
+<span id="walletStatus">
+NOT CONNECTED
+</span>
+
+<button class="small-button" id="connect">
+CONNECT WALLET
+</button>
+
+</div>
+
+
+<div class="daily-limit">
+
+<span>DAILY POSTING LIMIT</span>
+
+<strong id="dailyRemaining">
+3 OF 3 REMAINING
+</strong>
+
+<small>
+Maximum 3 successful inscriptions per wallet per UTC day.
+</small>
+
+</div>
+
+
+<label for="message" class="field-label">
+
+Your Message
+
+<span>
+280 characters max
+</span>
+
+</label>
+
+
+<textarea
+id="message"
+maxlength="280"
+rows="5"
+placeholder="Write your message to the chain…"
+></textarea>
+
+<div id="count" class="count">
+0 / 280
+</div>
+
+
+<div class="permanent-warning">
+
+<strong>
+⚠ THINK BEFORE YOU POST — YOUR MESSAGE MAY BE PERMANENT
+</strong>
+
+<p>
+Messages submitted to the 1404 Wall are intended to be recorded on a
+public blockchain. Once a transaction is confirmed, the message cannot
+be edited or deleted by the 1404 Wall, BDAG So Sorted or the website
+operators.
+</p>
+
+<p>
+Do not publish personal or private information, unlawful content,
+threats, defamatory material, or anything you would not want publicly
+associated with your wallet address.
+</p>
+
+<p>
+<strong>You are responsible for the content you submit.</strong>
+Blockchain publication does not exempt a user from applicable laws.
+</p>
+
+</div>
+
+
+<button
+class="button red submit"
+id="inscribe"
+disabled
+>
+WRITE TO CHAIN 1404 <b>→</b>
+</button>
+
+
+<p
+class="demo-note"
+id="composerNotice"
+role="status"
+>
+Demo preview. On-chain submission is disabled pending contract and
+network review.
+</p>
+
+<p class="terms-short">
+By proceeding when inscriptions are enabled, you will be required to
+acknowledge the
+<a href="terms.html">Terms &amp; Disclaimer</a>.
+</p>
+
+</div>
+
+</section>
+
+
+<section id="about" class="container about">
+
+<p class="kicker">
+HOW MODERATION WORKS
+</p>
+
+<h2>
+The blockchain is the record. This website is a filtered view.
+</h2>
+
+<p>
+Confirmed inscriptions may remain part of the blockchain record even
+when their message text is not displayed by this website.
+</p>
+
+<p>
+The 1404 Wall interface may hide profanity, abusive language, spam,
+malicious content or other material from its public feed. A display
+decision does not edit, erase or replace the underlying blockchain
+record and does not determine whether content is lawful or unlawful.
+</p>
+
+</section>
+
+</main>
+
+
+<footer>
+
+<div class="container footer-main">
+
+<div>
+
+<img
+src="brand-logo.png"
+alt="BDAG SO SORTED"
+>
+
+<span class="footer-divider"></span>
+
+<strong>
+THE 1404 WALL
+</strong>
+
+</div>
+
+
+<nav aria-label="Footer">
+
+<a href="#top">Home</a>
+
+<a href="#how">
+How it works
+</a>
+
+<a href="#wall">
+Messages
+</a>
+
+<a href="#write">
+Write
+</a>
+
+<a href="terms.html">
+Terms &amp; Disclaimer
+</a>
+
+</nav>
+
+
+<small>
+DEMO PREVIEW<br>
+NO TRANSACTIONS ENABLED
+</small>
+
+</div>
+
+
+<div class="footer-bottom">
+BDAG COMMUNITY 1404 WALL
+&nbsp; | &nbsp;
+COMMUNITY BUILT. COMMUNITY DELIVERS.
+</div>
+
+</footer>
+
+
+<dialog id="confirm">
+
+<form method="dialog">
+
+<button
+class="close"
+value="cancel"
+aria-label="Close"
+>
+×
+</button>
+
+<p class="kicker">
+FINAL CONFIRMATION
+</p>
+
+<h2>
+Think before you post.
+</h2>
+
+<div class="dialog-warning">
+
+<strong>
+YOUR MESSAGE MAY BECOME PERMANENT.
+</strong>
+
+<p>
+You are preparing to publish this message to BlockDAG Chain 1404.
+</p>
+
+</div>
+
+
+<blockquote id="reviewMessage"></blockquote>
+
+
+<div class="acknowledgement">
+
+<p>
+By continuing, you acknowledge that:
+</p>
+
+<ul>
+
+<li>
+your message and wallet address may become permanently public;
+</li>
+
+<li>
+the message cannot be edited or deleted by this website after
+blockchain confirmation;
+</li>
+
+<li>
+you are responsible for the content you publish;
+</li>
+
+<li>
+blockchain publication does not exempt you from applicable laws;
+</li>
+
+<li>
+the website may hide your message from its public feed without
+removing the underlying blockchain record.
+</li>
+
+</ul>
+
+</div>
+
+
+<p class="dialog-terms">
+
+Read the
+
+<a href="terms.html">
+Terms &amp; Disclaimer
+</a>
+
+before continuing.
+
+</p>
+
+
+<div class="dialog-actions">
+
+<button
+class="button white"
+value="cancel"
+>
+CANCEL
+</button>
+
+<button
+class="button red"
+value="acknowledged"
+id="acknowledge"
+>
+I UNDERSTAND
+</button>
+
+</div>
+
+
+<p class="demo-note">
+Demo only. Wallet signing and blockchain submission remain disabled.
+</p>
+
+</form>
+
+</dialog>
+
+
+<script
+type="module"
+src="app.js"
+></script>
+
+</body>
+</html>

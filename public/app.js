@@ -1,4 +1,8 @@
 import {chain, DEMO_MODE} from './config.js';
+import {
+  moderateMessage,
+  MODERATION_NOTICE
+} from './moderation.js';
 // Fictional preview entries. No block number, timestamp, transaction, or wallet is represented as real.
 const demo = [
   'The community builds. The community delivers.',
@@ -18,10 +22,22 @@ function render(){
     const row=document.createElement('article');row.className='message-row';
     const id=document.createElement('span');id.className='message-id';id.textContent=`#${String(demo.length-i).padStart(6,'0')}`;
     const body=document.createElement('div');body.className='message-body';
-    const quote=document.createElement('strong');quote.textContent=`“${message}”`;
-    const note=document.createElement('small');note.textContent='SAMPLE MESSAGE  ·  DEMO ONLY';
+    const moderation=moderateMessage(message);
+    if(moderation.hidden)row.classList.add('filtered');
+
+    const quote=document.createElement('strong');
+    quote.textContent=moderation.hidden
+      ? MODERATION_NOTICE
+      : `“${message}”`;
+
+    const note=document.createElement('small');
+    note.textContent='SAMPLE MESSAGE  ·  DEMO ONLY';
+
     body.append(quote,note);
-    const tag=document.createElement('span');tag.className='message-tag';tag.textContent='DEMO';
+
+    const tag=document.createElement('span');
+    tag.className='message-tag';
+    tag.textContent=moderation.hidden?'FILTERED':'DEMO';
     row.append(id,body,tag);cards.append(row);
   });
   if(!entries.length){const empty=document.createElement('p');empty.className='empty';empty.textContent=wallet?'My inscriptions will appear here when verified on-chain indexing is enabled.':'Connect a wallet to prepare for My Messages. On-chain indexing is not enabled.';cards.append(empty);}
@@ -35,7 +51,11 @@ $('#message').addEventListener('input',e=>{$('#count').textContent=`${[...e.targ
 function updateWallet(){
   $('#connect').textContent=wallet?'DISCONNECT':'CONNECT WALLET';
   $('#walletStatus').textContent=wallet?`${shortAddress(wallet)} · ${network?.toLowerCase()===chain.chainIdHex?'CHAIN 1404':'WRONG NETWORK'}`:'NOT CONNECTED';
-  $('#composerNotice').textContent=DEMO_MODE?'Demo preview. On-chain submission is disabled pending contract and network review.':'Inscription currently unavailable.';
+  $('#composerNotice').textContent=DEMO_MODE
+    ? 'Demo preview. On-chain submission is disabled pending contract and network review.'
+    : 'Inscription currently unavailable.';
+
+  $('#dailyRemaining').textContent='3 OF 3 REMAINING';
   $('#inscribe').disabled=true;
   if(filter==='mine')render();
 }
