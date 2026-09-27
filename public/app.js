@@ -5,17 +5,9 @@ import {
 } from './moderation.js';
 import {
   getWallSummary,
-  getRemainingToday
+  getRemainingToday,
+  getInscriptionLogs
 } from './live-chain.js';
-// Fictional preview entries. No block number, timestamp, transaction, or wallet is represented as real.
-const demo = [
-  'The community builds. The community delivers.',
-  'BDAG Community was here. 🚀',
-  'Building the future together on 1404!',
-  'Node operator — proud to be part of this journey.',
-  '1404 Genesis. Let’s go! 🔥',
-  'Every message begins a new chapter.'
-];
 const $ = s => document.querySelector(s);
 let filter='latest', shown=5, wallet=null, network=null;
 let liveSummary=null;
@@ -124,36 +116,197 @@ async function refreshAllowance(){
       'UNAVAILABLE';
   }
 }
+let inscriptions=[];
+let feedLoading=true;
+let feedError=null;
+
+function visibleEntries(){
+  let entries=inscriptions;
+
+  if(filter==='mine'){
+    if(!wallet)return [];
+
+    entries=entries.filter(
+      entry=>
+        entry.author.toLowerCase() ===
+        wallet.toLowerCase()
+    );
+  }
+
+  if(filter==='latest'){
+    return entries.slice(0,5);
+  }
+
+  return entries.slice(0,shown);
+}
+
+function formatTimestamp(value){
+  const milliseconds=
+    Number(value)*1000;
+
+  if(!Number.isSafeInteger(milliseconds)){
+    return 'ON-CHAIN';
+  }
+
+  return new Date(
+    milliseconds
+  ).toLocaleString();
+}
+
 function render(){
-  const cards=$('#cards');cards.replaceChildren();
-  const entries=filter==='mine'?[]:filter==='latest'?demo.slice(0,5):demo;
-  entries.slice(0,shown).forEach((message,i)=>{
-    const row=document.createElement('article');row.className='message-row';
-    const id=document.createElement('span');id.className='message-id';id.textContent=`#${String(demo.length-i).padStart(6,'0')}`;
-    const body=document.createElement('div');body.className='message-body';
-    const moderation=moderateMessage(message);
-    if(moderation.hidden)row.classList.add('filtered');
+  const cards=$('#cards');
+  cards.replaceChildren();
 
-    const quote=document.createElement('strong');
-    quote.textContent=moderation.hidden
-      ? MODERATION_NOTICE
-      : `“${message}”`;
+  if(feedLoading){
+    const loading=
+      document.createElement('p');
 
-    const note=document.createElement('small');
-    note.textContent='SAMPLE MESSAGE  ·  DEMO ONLY';
+    loading.className='empty';
+    loading.textContent=
+      'Reading inscriptions from Chain 1404…';
+
+    cards.append(loading);
+
+    $('#resultCount').textContent=
+      'Loading blockchain inscriptions';
+
+    $('#loadMore').hidden=true;
+    return;
+  }
+
+  if(feedError){
+    const error=
+      document.createElement('p');
+
+    error.className='empty';
+    error.textContent=
+      'The blockchain feed is temporarily unavailable. Please try again shortly.';
+
+    cards.append(error);
+
+    $('#resultCount').textContent=
+      'Blockchain feed unavailable';
+
+    $('#loadMore').hidden=true;
+    return;
+  }
+
+  const entries=visibleEntries();
+
+  entries.forEach(entry=>{
+    const row=
+      document.createElement('article');
+
+    row.className='message-row';
+
+    const id=
+      document.createElement('span');
+
+    id.className='message-id';
+    id.textContent=
+      `#${entry.id.toString().padStart(6,'0')}`;
+
+    const body=
+      document.createElement('div');
+
+    body.className='message-body';
+
+    const moderation=
+      moderateMessage(entry.message);
+
+    if(moderation.hidden){
+      row.classList.add('filtered');
+    }
+
+    const quote=
+      document.createElement('strong');
+
+    quote.textContent=
+      moderation.hidden
+        ? MODERATION_NOTICE
+        : `“${entry.message}”`;
+
+    const note=
+      document.createElement('small');
+
+    note.textContent=
+      `${shortAddress(entry.author)} · ${formatTimestamp(entry.timestamp)} · BLOCK ${entry.blockNumber}`;
 
     body.append(quote,note);
 
-    const tag=document.createElement('span');
+    const tag=
+      document.createElement('span');
+
     tag.className='message-tag';
-    tag.textContent=moderation.hidden?'FILTERED':'DEMO';
-    row.append(id,body,tag);cards.append(row);
+
+    tag.textContent=
+      moderation.hidden
+        ? 'FILTERED'
+        : 'ON-CHAIN';
+
+    row.append(
+      id,
+      body,
+      tag
+    );
+
+    cards.append(row);
   });
-  if(!entries.length){const empty=document.createElement('p');empty.className='empty';empty.textContent=wallet?'My inscriptions will appear here when verified on-chain indexing is enabled.':'Connect a wallet to prepare for My Messages. On-chain indexing is not enabled.';cards.append(empty);}
-  $('#resultCount').textContent=`${entries.length} demo entries`;
-  $('#loadMore').hidden=filter!=='all'||shown>=entries.length;
+
+  if(!entries.length){
+    const empty=
+      document.createElement('p');
+
+    empty.className='empty';
+
+    if(filter==='mine'){
+      empty.textContent=
+        wallet
+          ? 'No inscriptions from this wallet yet.'
+          : 'Connect your wallet to view your inscriptions.';
+    }else{
+      empty.textContent=
+        'No inscriptions yet. The 1404 Wall is ready for its first permanent message.';
+    }
+
+    cards.append(empty);
+  }
+
+  $('#resultCount').textContent=
+    `${entries.length} on-chain inscription${entries.length===1?'':'s'}`;
+
+  $('#loadMore').hidden=
+    filter!=='all' ||
+    shown>=inscriptions.length;
 }
-render();
+
+async function refreshFeed(){
+  feedLoading=
+    inscriptions.length===0;
+
+  if(feedLoading)render();
+
+  try{
+    const result=
+      await getInscriptionLogs();
+
+    inscriptions=result.entries;
+    feedError=null;
+
+  }catch(error){
+    console.error(
+      'Inscription feed read failed:',
+      error
+    );
+
+    feedError=error;
+
+  }finally{
+    feedLoading=false;
+    render();
+  }
+}
+refreshFeed();
 document.querySelectorAll('[data-filter]').forEach(button=>button.addEventListener('click',()=>{filter=button.dataset.filter;shown=5;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===button));render();}));
 $('#loadMore').addEventListener('click',()=>{shown+=5;render();});
 $('#message').addEventListener('input',e=>{$('#count').textContent=`${[...e.target.value].length} / 280`;});
@@ -161,7 +314,7 @@ function updateWallet(){
   $('#connect').textContent=wallet?'DISCONNECT':'CONNECT WALLET';
   $('#walletStatus').textContent=wallet?`${shortAddress(wallet)} · ${network?.toLowerCase()===chain.chainIdHex?'CHAIN 1404':'WRONG NETWORK'}`:'NOT CONNECTED';
   $('#composerNotice').textContent=DEMO_MODE
-    ? 'Demo preview. On-chain submission is disabled pending contract and network review.'
+    ? 'Live blockchain reads enabled. On-chain submission is currently disabled.'
     : 'Inscription currently unavailable.';
 
   $('#inscribe').disabled=true;
@@ -201,5 +354,10 @@ refreshLiveChain();
 
 setInterval(
   refreshLiveChain,
+  30000
+);
+
+setInterval(
+  refreshFeed,
   30000
 );

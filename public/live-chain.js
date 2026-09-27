@@ -294,3 +294,196 @@ export async function getWallSummary(
       chainId.rpc
   });
 }
+
+const WALL_DEPLOYMENT_BLOCK = 22626656n;
+
+// keccak256("Inscribed(uint256,address,string,uint256)")
+const INSCRIBED_TOPIC =
+  '0x7086cea2f11dc2f73900fb4c1cf318bcc5b8773a2c115840a07c3551314cab34';
+
+function hexBlock(value){
+  return '0x' + BigInt(value).toString(16);
+}
+
+function hexToBytes(hex){
+  const clean=hex.startsWith('0x')
+    ? hex.slice(2)
+    : hex;
+
+  if(clean.length % 2 !== 0){
+    throw new Error('Invalid hex data');
+  }
+
+  const bytes=
+    new Uint8Array(clean.length / 2);
+
+  for(let i=0;i<bytes.length;i++){
+    bytes[i]=
+      parseInt(clean.slice(i*2,i*2+2),16);
+  }
+
+  return bytes;
+}
+
+function readWord(hex,wordIndex){
+  const clean=
+    hex.startsWith('0x')
+      ? hex.slice(2)
+      : hex;
+
+  const start=wordIndex*64;
+  const word=clean.slice(start,start+64);
+
+  if(word.length !== 64){
+    throw new Error(
+      'Invalid ABI word'
+    );
+  }
+
+  return BigInt('0x'+word);
+}
+
+function decodeAbiString(data){
+  const clean=
+    data.startsWith('0x')
+      ? data.slice(2)
+      : data;
+
+  const offset=
+    Number(readWord(clean,0));
+
+  const lengthWordIndex=
+    offset / 32;
+
+  const length=
+    Number(
+      readWord(
+        clean,
+        lengthWordIndex
+      )
+    );
+
+  const stringStart=
+    (lengthWordIndex + 1) * 64;
+
+  const stringHex=
+    clean.slice(
+      stringStart,
+      stringStart + length*2
+    );
+
+  return new TextDecoder(
+    'utf-8',
+    {fatal:true}
+  ).decode(
+    hexToBytes(stringHex)
+  );
+}
+
+function topicAddress(topic){
+  if(
+    typeof topic !== 'string' ||
+    topic.length !== 66
+  ){
+    throw new Error(
+      'Invalid indexed address topic'
+    );
+  }
+
+  return '0x' + topic.slice(-40);
+}
+
+function decodeInscribedLog(log){
+  if(
+    !Array.isArray(log.topics) ||
+    log.topics.length < 3
+  ){
+    throw new Error(
+      'Invalid Inscribed event'
+    );
+  }
+
+  const id=
+    BigInt(log.topics[1]);
+
+  const author=
+    topicAddress(log.topics[2]);
+
+  const message=
+    decodeAbiString(log.data);
+
+  const clean=
+    log.data.startsWith('0x')
+      ? log.data.slice(2)
+      : log.data;
+
+  const timestamp=
+    readWord(clean,2);
+
+  return Object.freeze({
+    id,
+    author,
+    message,
+    timestamp,
+    blockNumber:
+      BigInt(log.blockNumber),
+    transactionHash:
+      log.transactionHash
+  });
+}
+
+async function getInscribedTopic(){
+  // eth_getLogs needs the Keccak-256 event topic.
+  // Ask the connected browser/runtime for the exact value
+  // through a locally known constant generated below.
+  return INSCRIBED_TOPIC;
+}
+
+export async function getInscriptionLogs(
+  fromBlock=WALL_DEPLOYMENT_BLOCK,
+  toBlock='latest'
+){
+  const topic=
+    await getInscribedTopic();
+
+  if(!/^0x[a-fA-F0-9]{64}$/.test(topic)){
+    throw new Error(
+      'Inscribed event topic has not been generated'
+    );
+  }
+
+  const response=
+    await rpcWithFallback(
+      'eth_getLogs',
+      [{
+        address:chain.contractAddress,
+        fromBlock:hexBlock(fromBlock),
+        toBlock:
+          toBlock === 'latest'
+            ? 'latest'
+            : hexBlock(toBlock),
+        topics:[topic]
+      }]
+    );
+
+  const logs=
+    Array.isArray(response.result)
+      ? response.result
+      : [];
+
+  return {
+    entries:
+      logs
+        .map(decodeInscribedLog)
+        .sort(
+          (a,b)=>
+            a.id > b.id ? -1 :
+            a.id < b.id ? 1 : 0
+        ),
+    rpc:response.rpc
+  };
+}
+
+export {
+  WALL_DEPLOYMENT_BLOCK
+};
