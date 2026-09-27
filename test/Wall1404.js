@@ -83,6 +83,35 @@ describe("Wall1404", function () {
     expect(await wall.inscriptionCount()).to.equal(1n);
   });
 
+
+  it("accepts 280 four-byte Unicode characters at exactly 1120 bytes", async function () {
+    const { wall } = await deployWall();
+
+    const message = "😀".repeat(280);
+
+    expect([...message].length).to.equal(280);
+    expect(new TextEncoder().encode(message).length).to.equal(1120);
+
+    await wall.inscribe(message);
+
+    expect(await wall.inscriptionCount()).to.equal(1n);
+  });
+
+  it("rejects 281 four-byte Unicode characters above the 1120-byte ceiling", async function () {
+    const { wall } = await deployWall();
+
+    const message = "😀".repeat(281);
+
+    expect([...message].length).to.equal(281);
+    expect(new TextEncoder().encode(message).length).to.equal(1124);
+
+    await expectCustomError(
+      wall.inscribe(message),
+      wall,
+      "MessageTooLarge"
+    );
+  });
+
   it("rejects a message above the byte ceiling", async function () {
     const { wall } = await deployWall();
 
