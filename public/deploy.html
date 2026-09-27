@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1"
+>
+<meta name="robots" content="noindex,nofollow">
+<title>Deploy 1404 Wall — BDAG So Sorted</title>
+<link rel="stylesheet" href="styles.css">
+
+<style>
+.deploy-page{
+  width:min(760px,calc(100% - 32px));
+  margin:55px auto 90px
+}
+.deploy-card{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:28px;
+  box-shadow:0 15px 40px #00000008
+}
+.deploy-card h1{
+  font:700 34px 'Space Grotesk',sans-serif;
+  margin:0 0 8px
+}
+.deploy-card h1 span{color:var(--red)}
+.deploy-card>p{color:#6f7378}
+.deploy-status{
+  margin:25px 0;
+  display:grid;
+  gap:8px
+}
+.deploy-row{
+  display:grid;
+  grid-template-columns:170px 1fr;
+  gap:15px;
+  padding:12px;
+  border:1px solid #eee;
+  border-radius:9px;
+  font-size:12px
+}
+.deploy-row strong{font-weight:800}
+.deploy-row span{
+  overflow-wrap:anywhere;
+  text-align:right
+}
+.deploy-warning{
+  background:#fff0f2;
+  border:1px solid #ffd5dc;
+  border-radius:10px;
+  padding:15px;
+  margin:20px 0;
+  font-size:12px
+}
+.deploy-confirm{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  font-size:12px;
+  margin:18px 0
+}
+.deploy-actions{
+  display:grid;
+  gap:10px
+}
+.deploy-actions button{width:100%}
+.deploy-result{
+  margin-top:20px;
+  padding:15px;
+  background:#f7f7f7;
+  border-radius:9px;
+  font-size:12px;
+  overflow-wrap:anywhere
+}
+.deploy-result:empty{display:none}
+.pass{color:#16834b}
+.fail{color:#c21d3a}
+@media(max-width:600px){
+  .deploy-row{
+    grid-template-columns:1fr
+  }
+  .deploy-row span{text-align:left}
+}
+</style>
+</head>
+
+<body>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="index.html" class="logo-link">
+      <img src="brand-logo.png" alt="BDAG SO SORTED">
+    </a>
+
+    <strong style="font-size:12px;color:var(--red)">
+      CONTRACT DEPLOYMENT
+    </strong>
+  </div>
+</header>
+
+<main class="deploy-page">
+
+<div class="deploy-card">
+
+<p class="kicker">1404 WALL · MAINNET DEPLOYMENT</p>
+
+<h1>Deploy <span>Wall1404.</span></h1>
+
+<p>
+This private deployment utility prepares the tested Wall1404
+contract for deployment to BlockDAG Chain 1404 using your
+browser wallet.
+</p>
+
+<div class="deploy-warning">
+<strong>Nothing is deployed merely by opening this page.</strong>
+A transaction can only be created after you connect a wallet,
+pass the Chain 1404 checks, acknowledge the deployment and
+approve the transaction inside your wallet.
+</div>
+
+<div class="deploy-status">
+
+<div class="deploy-row">
+<strong>Wallet</strong>
+<span id="wallet">NOT CONNECTED</span>
+</div>
+
+<div class="deploy-row">
+<strong>Chain ID</strong>
+<span id="chain">—</span>
+</div>
+
+<div class="deploy-row">
+<strong>Network</strong>
+<span id="network">—</span>
+</div>
+
+<div class="deploy-row">
+<strong>Balance</strong>
+<span id="balance">—</span>
+</div>
+
+<div class="deploy-row">
+<strong>Bytecode</strong>
+<span id="bytecode">—</span>
+</div>
+
+<div class="deploy-row">
+<strong>Estimated Gas</strong>
+<span id="gas">—</span>
+</div>
+
+<div class="deploy-row">
+<strong>Estimated Cost</strong>
+<span id="cost">—</span>
+</div>
+
+</div>
+
+<div class="deploy-actions">
+
+<button
+  id="connect"
+  class="button white"
+>
+CONNECT DEPLOYMENT WALLET
+</button>
+
+<label class="deploy-confirm">
+<input
+  id="acknowledge"
+  type="checkbox"
+  disabled
+>
+<span>
+I understand this will create the permanent Wall1404
+smart contract on Chain 1404 and will require a real
+BDAG network transaction.
+</span>
+</label>
+
+<button
+  id="deploy"
+  class="button red"
+  disabled
+>
+DEPLOY WALL1404
+</button>
+
+</div>
+
+<div
+  id="result"
+  class="deploy-result"
+  role="status"
+></div>
+
+</div>
+
+</main>
+
+<script type="module" src="deploy.js"></script>
+
+</body>
+</html>
